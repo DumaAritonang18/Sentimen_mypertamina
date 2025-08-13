@@ -21,8 +21,8 @@ mypertamina-sentiment/
 ## ⚙️ Instalasi Lokal
 1. **Clone repository**:
 ```bash
-git clone https://github.com/username/mypertamina-sentiment.git
-cd mypertamina-sentiment
+git clone https://github.com/DumaAritonang18/Sentimen_mypertamina.git
+cd Sentimen_mypertamina
 ```
 2. **Buat virtual environment dan aktifkan**:
 ```bash
@@ -56,6 +56,8 @@ matplotlib
 plotly
 joblib
 ```
+## Link Streamlit.io 
+https://sentimenmypertamina-nxsq5oz7klpzeztmtef7hh.streamlit.app/
 
 ## 📜 Lisensi
 Proyek ini dibuat untuk Tugas UTS Mata Kuliah Pemrograman Bahasa Alami - Duma Zindy Aritonang
