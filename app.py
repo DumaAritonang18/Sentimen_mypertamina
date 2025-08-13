@@ -144,7 +144,7 @@ elif menu == "Upload Data":
     with colL:
         file = st.file_uploader("Unggah CSV", type=["csv"], help="Format umum: content, score")
     with colR:
-        if st.button("Gunakan Contoh: myPertamina.csv", use_container_width=True):
+        if st.button("Gunakan Data Alternatif: myPertamina.csv", use_container_width=True):
             try:
                 st.session_state.df = pd.read_csv("myPertamina.csv")
                 st.success("Contoh myPertamina.csv dimuat.")
@@ -412,3 +412,4 @@ elif menu == "Prediksi":
             label = "🌟 Positif" if pred==1 else "⚠️ Negatif"
             st.success(f"Hasil: {label}")
             st.caption(f"Skor keputusan: {score:.3f} (semakin besar → semakin positif)")
+
