@@ -1,6 +1,6 @@
 # python
 # =============================================================
-# 📌 Sentimen myPertamina — Streamlit App (with detailed comments)
+# 📌 Sentimen myPertamina — Streamlit App
 # Deskripsi: Aplikasi Streamlit untuk analisis sentimen ulasan.
 # Catatan: File ini sudah ditambahkan penjelasan (komentar) lengkap di setiap bagian.
 # =============================================================
@@ -344,5 +344,6 @@ elif menu == "Prediksi":
 
             st.success(f"Hasil: {label}")
             st.caption(f"Skor keputusan: {score:.3f} (semakin besar → semakin positif)")
+
 
 
