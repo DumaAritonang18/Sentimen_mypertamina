@@ -69,7 +69,7 @@ def build_clean_df(df: pd.DataFrame, text_col: str, label_col: str) -> pd.DataFr
 st.sidebar.title("📂 Menu")
 menu = st.sidebar.radio(
     "Pilih Halaman:",
-    ["Dashboard", "Upload Data", "Pra-Pemrosesan", "Latih Model", "Pembagian Dataset (Train/Test)", "Prediksi"], index=0
+    ["Dashboard", "Upload Data", "Pra-Pemrosesan", "Latih Model", "Prediksi"], index=0
 )
 
 # Shared state
@@ -259,7 +259,7 @@ elif menu == "Pra-Pemrosesan":
         )
 
 # =============================
-# 🧠 Latih Model
+# 🧠 Latih Model (dengan visual split)
 # =============================
 elif menu == "Latih Model":
     st.header("🧠 Latih Model")
@@ -292,6 +292,48 @@ elif menu == "Latih Model":
         df["_x"], df["_y"], test_size=test_size, random_state=random_state, stratify=stratify
     )
 
+    # =============================
+    # 🎯 Visualisasi Pembagian Dataset
+    # =============================
+    st.subheader("📊 Visualisasi Pembagian Dataset (Train/Test)")
+    train_n, test_n = len(X_train), len(X_test)
+    total_n = train_n + test_n if (len(X_train) + len(X_test)) > 0 else 1
+    k1, k2, k3 = st.columns(3)
+    with k1:
+        st.markdown(f"**Train**: {train_n:,} baris ({(train_n/total_n)*100:.1f}%)")
+    with k2:
+        st.markdown(f"**Test**: {test_n:,} baris ({(test_n/total_n)*100:.1f}%)")
+    with k3:
+        st.markdown(f"**Stratify**: {'Ya' if stratify is not None else 'Tidak'}")
+
+    # Pie chart komposisi train/test
+    pie_df = pd.DataFrame({"split": ["Train","Test"], "jumlah": [train_n, test_n]})
+    pie_fig = px.pie(pie_df, names="split", values="jumlah", title="Proporsi Train vs Test")
+
+    # Distribusi label per split
+    tr_counts = y_train.value_counts().reset_index(); tr_counts.columns = ["label","jumlah"]; tr_counts["split"] = "Train"
+    te_counts = y_test.value_counts().reset_index(); te_counts.columns = ["label","jumlah"]; te_counts["split"] = "Test"
+    dist_df = pd.concat([tr_counts, te_counts], ignore_index=True)
+    bar_fig = px.bar(dist_df, x="label", y="jumlah", color="split", barmode="group", text="jumlah", title="Distribusi Label per Split")
+
+    cA, cB = st.columns(2)
+    with cA:
+        st.plotly_chart(pie_fig, use_container_width=True)
+    with cB:
+        st.plotly_chart(bar_fig, use_container_width=True)
+
+    with st.expander("🔎 Sampel Tiap Split (5 baris)"):
+        colL, colR = st.columns(2)
+        with colL:
+            st.caption("Train")
+            st.dataframe(pd.DataFrame({"text": X_train.head(5), "label": y_train.head(5)}), use_container_width=True)
+        with colR:
+            st.caption("Test")
+            st.dataframe(pd.DataFrame({"text": X_test.head(5), "label": y_test.head(5)}), use_container_width=True)
+
+    # =============================
+    # 🚀 Training Model
+    # =============================
     if st.button("🚀 Latih LinearSVC", type="primary"):
         vectorizer = TfidfVectorizer(ngram_range=(1,2), max_features=20000)
         clf = LinearSVC()
@@ -311,7 +353,7 @@ elif menu == "Latih Model":
 
         rep_df = pd.DataFrame(report).transpose()
         cols = [c for c in ["precision","recall","f1-score","support"] if c in rep_df.columns]
-        st.subheader("📊 Evaluasi")
+        st.subheader("📈 Evaluasi Model")
         st.dataframe(rep_df[cols].style.format({"precision":"{:.2f}","recall":"{:.2f}","f1-score":"{:.2f}","support":"{:.0f}"}), use_container_width=True)
 
         fig, ax = plt.subplots(figsize=(4,4))
@@ -348,7 +390,6 @@ elif menu == "Latih Model":
             buf = io.BytesIO()
             joblib.dump({"vectorizer": vectorizer, "model": clf}, buf)
             st.download_button("Download joblib", data=buf.getvalue(), file_name="mypertamina_sentiment.joblib", mime="application/octet-stream")
-    
 
 # =============================
 # 📝 Prediksi
@@ -371,4 +412,3 @@ elif menu == "Prediksi":
             label = "🌟 Positif" if pred==1 else "⚠️ Negatif"
             st.success(f"Hasil: {label}")
             st.caption(f"Skor keputusan: {score:.3f} (semakin besar → semakin positif)")
-
