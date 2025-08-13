@@ -122,7 +122,7 @@ if menu == "Dashboard":
                 st.info("Kolom teks belum terdeteksi.")
 
         # Sample table
-        with st.expander("🔎 Contoh Ulasan (10 baris)"):
+        with st.expander("🔎 Ulasan (10 baris)"):
             sample_cols = [c for c in [text_col, label_col] if c in df.columns]
             st.dataframe(df[sample_cols].head(10), use_container_width=True)
 
@@ -299,4 +299,5 @@ elif menu == "Prediksi":
             st.success(f"Hasil: {label}")
 
             st.caption(f"Skor keputusan: {score:.3f} (semakin besar → semakin positif)")
+
 
