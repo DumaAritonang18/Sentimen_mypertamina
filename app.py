@@ -1,3 +1,14 @@
+```python
+# =============================================================
+# 📌 Sentimen myPertamina — Streamlit App (with detailed comments)
+# Deskripsi: Aplikasi Streamlit untuk analisis sentimen ulasan.
+# Catatan: File ini sudah ditambahkan penjelasan (komentar) lengkap di setiap bagian.
+# =============================================================
+
+# ===============
+# 1) IMPORTS
+# ===============
+# Pustaka UI, data, ML, dan plotting yang dibutuhkan.
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -12,8 +23,10 @@ from sklearn.svm import LinearSVC
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 
 # =============================
-# 🎨 Setup & Gaya
+# 2) SETUP TAMPILAN & GAYA
 # =============================
+# - set_page_config: mengatur judul, ikon, layout (wide agar lebar)
+# - CSS kustom: mempercantik sidebar dan komponen KPI
 st.set_page_config(page_title="Sentimen myPertamina — Simple", layout="wide")
 st.markdown(
     """
@@ -31,17 +44,25 @@ st.markdown(
 )
 
 # =============================
-# 🧰 Utils
+# 3) UTILITAS & KONSTANTA
 # =============================
+# Daftar kandidat nama kolom untuk menebak kolom teks & label secara otomatis.
 TEXT_CANDIDATES = ["content","review","ulasan","text","comment","comments","body","title"]
 LABEL_CANDIDATES = ["label","labels","sentiment","score","rating","stars"]
 
+# --- PRAPEMROSESAN TEKS ---
+# Fungsi inti untuk membersihkan teks:
+# 1) Lowercasing; 2) Hapus karakter non-huruf; 3) Normalisasi spasi
+# Catatan: Anda bisa menambahkan stopwords/stemming di sini bila diperlukan.
 def clean_text(s: str) -> str:
     s = str(s).lower()
     s = re.sub(r"[^a-zA-Z\s]", " ", s)
     s = re.sub(r"\s+", " ", s).strip()
     return s
 
+# --- PEMETAAN LABEL → BINER ---
+# Mengubah skor (1–5) jadi target biner:
+# 1-2 = 0 (negatif), 4-5 = 1 (positif), 3/invalid = NaN (dibuang)
 def to_binary(y):
     y = pd.to_numeric(y, errors='coerce')
     if pd.isna(y):
@@ -50,18 +71,19 @@ def to_binary(y):
         return 0
     if y in [4,5]:
         return 1
-    return np.nan  # buang 3 / nilai lain
+    return np.nan
 
 # =============================
-# 📂 Sidebar Menu
+# 4) SIDEBAR NAVIGASI & STATE
 # =============================
+# Sidebar sebagai menu utama aplikasi + state untuk menyimpan data & model.
 st.sidebar.title("📂 Menu")
 menu = st.sidebar.radio(
     "Pilih Halaman:",
     ["Dashboard", "Upload Data", "Latih Model", "Prediksi"], index=0
 )
 
-# Shared state
+# State global: menyimpan dataset, model, vectorizer, dan nama kolom yang dipilih user.
 if "df" not in st.session_state:
     st.session_state.df = None
 if "model" not in st.session_state:
@@ -74,8 +96,10 @@ if "label_col" not in st.session_state:
     st.session_state.label_col = None
 
 # =============================
-# 🏠 Dashboard / Home
+# 5) DASHBOARD / HOME
 # =============================
+# Menampilkan ringkasan cepat dataset: KPI, distribusi label, histogram panjang teks,
+# dan contoh beberapa baris data.
 if menu == "Dashboard":
     st.header("🏠 Dashboard Analisis Sentimen My Pertamina")
     st.caption("Ringkasan dataset, distribusi label, dan panjang teks. Mulai dengan mengunggah data di menu **Upload Data**.")
@@ -85,10 +109,11 @@ if menu == "Dashboard":
     else:
         df = st.session_state.df.copy()
         all_cols = df.columns.tolist()
+        # Jika user belum memilih kolom, tebak otomatis berdasarkan kandidat.
         text_col = st.session_state.text_col or next((c for c in TEXT_CANDIDATES if c in all_cols), all_cols[0])
         label_col = st.session_state.label_col or next((c for c in LABEL_CANDIDATES if c in all_cols), (all_cols[1] if len(all_cols)>1 else all_cols[0]))
 
-        # KPI
+        # KPI sederhana
         k1,k2,k3,k4 = st.columns(4)
         with k1:
             st.markdown(f"<div class='kpi'><h4>Baris</h4><p>{len(df):,}</p></div>", unsafe_allow_html=True)
@@ -100,7 +125,7 @@ if menu == "Dashboard":
             nunique = df[label_col].nunique(dropna=True) if label_col in df else 0
             st.markdown(f"<div class='kpi'><h4>Unik Label</h4><p>{nunique}</p></div>", unsafe_allow_html=True)
 
-        # Charts
+        # Grafik distribusi label (Plotly bar)
         colA, colB = st.columns(2)
         with colA:
             st.subheader("Distribusi Label/Rating")
@@ -111,6 +136,7 @@ if menu == "Dashboard":
                 st.plotly_chart(fig, use_container_width=True)
             else:
                 st.info("Kolom label belum terdeteksi.")
+        # Histogram panjang teks (Plotly histogram)
         with colB:
             st.subheader("Panjang Teks (karakter)")
             if text_col in df:
@@ -121,13 +147,13 @@ if menu == "Dashboard":
             else:
                 st.info("Kolom teks belum terdeteksi.")
 
-        # Sample table
+        # Contoh ulasan (10 baris)
         with st.expander("🔎 Ulasan (10 baris)"):
             sample_cols = [c for c in [text_col, label_col] if c in df.columns]
             st.dataframe(df[sample_cols].head(10), use_container_width=True)
 
 # =============================
-# 🗂️ Upload Data
+# 6) UPLOAD DATA
 # =============================
 elif menu == "Upload Data":
     st.header("📥 Upload / Muat Dataset")
@@ -135,8 +161,10 @@ elif menu == "Upload Data":
 
     colL, colR = st.columns([2,1])
     with colL:
+        # Opsi unggah CSV dari perangkat
         file = st.file_uploader("Unggah CSV", type=["csv"], help="Format umum: content, score")
     with colR:
+        # Opsi memuat contoh myPertamina.csv jika tersedia di direktori kerja
         if st.button("Gunakan Data Alternatif: myPertamina.csv", use_container_width=True):
             try:
                 st.session_state.df = pd.read_csv("myPertamina.csv")
@@ -144,6 +172,7 @@ elif menu == "Upload Data":
             except Exception as e:
                 st.error(f"Gagal memuat myPertamina.csv: {e}")
 
+    # Jika user mengupload file
     if file is not None:
         try:
             st.session_state.df = pd.read_csv(file)
@@ -151,6 +180,7 @@ elif menu == "Upload Data":
         except Exception as e:
             st.error(f"Gagal membaca CSV: {e}")
 
+    # Setelah dataset ada di state, tampilkan ringkasannya
     if st.session_state.df is not None:
         df = st.session_state.df
         all_cols = df.columns.tolist()
@@ -163,6 +193,7 @@ elif menu == "Upload Data":
         with st.expander("🔎 Pratinjau data (5 baris)", expanded=False):
             st.dataframe(df.head(5), use_container_width=True)
 
+        # KPI ringkas untuk memastikan kolom sudah tepat
         k1,k2,k3 = st.columns(3)
         with k1:
             st.markdown(f"<div class='kpi'><h4>Baris</h4><p>{len(df):,}</p></div>", unsafe_allow_html=True)
@@ -174,29 +205,34 @@ elif menu == "Upload Data":
         st.info("Unggah CSV atau klik tombol untuk memuat contoh.")
 
 # =============================
-# 🧠 Latih Model
+# 7) LATIH MODEL
 # =============================
 elif menu == "Latih Model":
     st.header("🧠 Latih Model")
+    # Pastikan data sudah dimuat
     if st.session_state.df is None:
         st.warning("Silakan muat data di menu **Upload Data** dulu.")
         st.stop()
 
+    # Ambil kolom teks/label yang dipilih
     df = st.session_state.df.copy()
     text_col = st.session_state.text_col or df.select_dtypes(include=['object']).columns[0]
     label_col = st.session_state.label_col or (set(df.columns)-{text_col}).pop()
 
-    # Siapkan target biner
+    # ---------- Tahap PRAPEMROSESAN LABEL ----------
+    # 1) Hapus baris NaN pada kolom teks/label
     df = df.dropna(subset=[text_col, label_col]).copy()
+    # 2) Peta label ke biner (1–2=0, 4–5=1; selain itu dibuang)
     df["_y"] = df[label_col].apply(to_binary)
-    dropped = int(df["_y"].isna().sum())
+    dropped = int(df["_y"].isna().sum())  # jumlah baris yang dibuang
     df = df.dropna(subset=["_y"]).copy()
     df["_y"] = df["_y"].astype(int)
 
-    # Bersihkan teks
+    # ---------- Tahap PRAPEMROSESAN TEKS ----------
+    # 3) Bersihkan teks dengan clean_text()
     df["_x"] = df[text_col].astype(str).apply(clean_text)
 
-    # Kontrol
+    # ---------- Parameter training ----------
     c1,c2,c3 = st.columns([1,1,1])
     with c1:
         test_size = st.slider("Test size", 0.1, 0.4, 0.2, 0.05)
@@ -207,39 +243,41 @@ elif menu == "Latih Model":
         st.write("")
         st.caption(f"Skema biner: 1–2→0, 4–5→1. Dibuang: {dropped} baris (nilai 3/tidak valid).")
 
-    # Split (stratify jika memungkinkan)
+    # 4) Split train/test (stratify agar proporsi kelas seimbang)
     stratify = df["_y"] if df["_y"].nunique() > 1 else None
     X_train, X_test, y_train, y_test = train_test_split(
         df["_x"], df["_y"], test_size=test_size, random_state=random_state, stratify=stratify
     )
 
-    # Latih
+    # ---------- Latih model saat tombol ditekan ----------
     if st.button("🚀 Latih LinearSVC", type="primary"):
+        # 5) Vectorizer TF-IDF (fit di train, transform di test)
         vectorizer = TfidfVectorizer(ngram_range=(1,2), max_features=20000)
         clf = LinearSVC()
         with st.spinner("Melatih model..."):
             Xtr = vectorizer.fit_transform(X_train)
             Xte = vectorizer.transform(X_test)
+            # 6) Training
             clf.fit(Xtr, y_train)
+            # 7) Evaluasi
             y_pred = clf.predict(Xte)
             acc = accuracy_score(y_test, y_pred)
             report = classification_report(y_test, y_pred, output_dict=True, zero_division=0)
             cm = confusion_matrix(y_test, y_pred)
 
-        # Simpan state
+        # Simpan model & vectorizer ke session untuk dipakai di halaman Prediksi
         st.session_state.model = clf
         st.session_state.vectorizer = vectorizer
 
-        # KPI akurasi
+        # ---------- Tampilkan hasil evaluasi ----------
         st.success(f"Model selesai dilatih. Akurasi: {acc:.2%}")
 
-        # Tabel metrik
         rep_df = pd.DataFrame(report).transpose()
         cols = [c for c in ["precision","recall","f1-score","support"] if c in rep_df.columns]
         st.subheader("📊 Evaluasi")
         st.dataframe(rep_df[cols].style.format({"precision":"{:.2f}","recall":"{:.2f}","f1-score":"{:.2f}","support":"{:.0f}"}), use_container_width=True)
 
-        # Confusion matrix
+        # Confusion matrix (visual)
         fig, ax = plt.subplots(figsize=(4,4))
         im = ax.imshow(cm, cmap='Blues')
         ax.figure.colorbar(im, ax=ax)
@@ -254,7 +292,7 @@ elif menu == "Latih Model":
                 ax.text(j, i, format(cm[i, j], 'd'), ha='center', va='center')
         st.pyplot(fig)
 
-        # 🔎 Top fitur (n-gram) pro/kontra
+        # (Opsional) Tampilkan n-gram paling berpengaruh berdasar koefisien LinearSVC
         try:
             st.subheader("🔎 Kata/N-gram Paling Berpengaruh")
             feature_names = np.array(st.session_state.vectorizer.get_feature_names_out())
@@ -271,33 +309,39 @@ elif menu == "Latih Model":
         except Exception:
             pass
 
-        # 💾 Unduh model
+        # Ekspor model (vectorizer + model) sebagai satu file .joblib
         with st.expander("💾 Ekspor Model"):
             buf = io.BytesIO()
             joblib.dump({"vectorizer": vectorizer, "model": clf}, buf)
             st.download_button("Download joblib", data=buf.getvalue(), file_name="mypertamina_sentiment.joblib", mime="application/octet-stream")
 
 # =============================
-# 📝 Prediksi
+# 8) PREDIKSI
 # =============================
 elif menu == "Prediksi":
     st.header("📝 Prediksi Sentimen")
+    # Pastikan model dan vectorizer sudah ada (dilatih)
     if st.session_state.model is None or st.session_state.vectorizer is None:
         st.info("Latih model dulu di menu **Latih Model**.")
         st.stop()
 
+    # Input teks dari pengguna
     txt = st.text_area("Masukkan teks ulasan:", height=120, placeholder="Contoh: Aplikasinya mudah dipakai dan responsif…")
+
+    # Saat tombol ditekan: lakukan prapemrosesan + vectorize + prediksi
     if st.button("Prediksi", use_container_width=True):
         if not txt.strip():
             st.warning("Masukkan teks terlebih dahulu.")
         else:
+            # --- PRAPEMROSESAN INPUT ---
             x = clean_text(txt)
+            # Vectorize dengan TF-IDF yang sudah di-fit saat training
             Xv = st.session_state.vectorizer.transform([x])
+            # Prediksi kelas dan skor keputusan (margin SVM)
             pred = int(st.session_state.model.predict(Xv)[0])
             score = float(st.session_state.model.decision_function(Xv)[0])
             label = "🌟 Positif" if pred==1 else "⚠️ Negatif"
+
             st.success(f"Hasil: {label}")
-
             st.caption(f"Skor keputusan: {score:.3f} (semakin besar → semakin positif)")
-
-
+```
