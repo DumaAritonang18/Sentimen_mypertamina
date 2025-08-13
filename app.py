@@ -77,8 +77,8 @@ if "label_col" not in st.session_state:
 # 🏠 Dashboard / Home
 # =============================
 if menu == "Dashboard":
-    st.header("🏠 Dashboard")
-    st.caption("Ringkasan cepat dataset, distribusi label, dan panjang teks. Mulai dengan mengunggah data di menu **Upload Data**.")
+    st.header("🏠 Dashboard Analisis Sentimen My Pertamina")
+    st.caption("Ringkasan dataset, distribusi label, dan panjang teks. Mulai dengan mengunggah data di menu **Upload Data**.")
 
     if st.session_state.df is None:
         st.info("Belum ada data. Silakan buka menu **Upload Data** terlebih dahulu.")
@@ -297,4 +297,5 @@ elif menu == "Prediksi":
             score = float(st.session_state.model.decision_function(Xv)[0])
             label = "🌟 Positif" if pred==1 else "⚠️ Negatif"
             st.success(f"Hasil: {label}")
+
             st.caption(f"Skor keputusan: {score:.3f} (semakin besar → semakin positif)")
